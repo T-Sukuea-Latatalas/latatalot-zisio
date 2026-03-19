@@ -3,405 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラタタラ語 辞書 (Latatala Dictionary)</title>
+    <title>ラタタラ語 辞書 [LIVE DATABASE]</title>
     <style>
-        /* --- フォント設定 --- */
-        /* お手持ちのフォントファイル名に合わせて src を変更してください */
-        @font-face {
-            font-family: 'Latatala_Font2';
-            src: url('./Latatala_Font2.ttf') format('truetype'),
-                 url('./Latatala_Font2.woff') format('woff');
-            /* フォントが見つからない場合の代替フォント */
-            font-weight: normal;
-            font-style: normal;
+        /* SF・サイバーパンク風スタイル */
+        body { 
+            font-family: 'Segoe UI', "Meiryo", sans-serif; 
+            margin: 0; background-color: #05050a;
+            color: #c5d3e8; line-height: 1.6;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            padding-bottom: 50px;
         }
 
-        /* --- 基本スタイル --- */
-        body {
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 20px;
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+        h1 { 
+            text-align: center; color: #00f0ff; font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            letter-spacing: 4px; margin: 40px 0;
+            text-transform: uppercase;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #ddd;
-        }
+        #status { text-align: center; font-family: monospace; font-size: 0.8rem; color: #00f0ff; margin-bottom: 20px; }
 
-        h1 {
-            color: #2c3e50;
+        /* フィルター */
+        .filter-area {
+            background: rgba(10, 15, 25, 0.9); border: 1px solid #1a4a5e;
+            padding: 15px; border-radius: 4px; margin-bottom: 30px;
         }
-
-        .stats {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 10px;
+        .filter-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .pos-btn {
+            background: transparent; border: 1px solid #1a4a5e; color: #8ab4f8;
+            padding: 5px 12px; cursor: pointer; font-size: 0.85rem; border-radius: 2px;
+            transition: 0.2s;
         }
+        .pos-btn.active { border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.1); }
 
-        /* --- コントロールエリア (検索・絞り込み) --- */
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        input[type="text"], select {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        input[type="text"] {
-            width: 250px;
-        }
-
-        /* --- 辞書リスト --- */
-        #dictionary-list {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* 単語カード */
-        .word-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-
-        .word-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        .word-header {
-            display: grid;
-            grid-template-columns: 2fr 2fr 1.5fr; /* ラタタラ語・日本語・発音の比率 */
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid transparent;
+        /* 辞書表示 */
+        .pos-section { margin-bottom: 50px; }
+        .pos-title { 
+            color: #b0f2b6; border-left: 4px solid #b0f2b6; 
+            padding-left: 15px; margin-bottom: 20px; font-weight: 300; letter-spacing: 2px;
         }
         
-        /* スマホ表示対応 */
-        @media (max-width: 600px) {
-            .word-header {
-                grid-template-columns: 1fr;
-                gap: 5px;
-            }
-        }
-
-        /* ラタタラ語フォント適用クラス */
-        .latatala-word {
-            font-family: 'Latatala_Font2', sans-serif;
-            font-size: 1.5rem;
-            color: #007bff;
-            font-weight: bold;
-        }
-
-        .japanese-word {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .pronunciation {
-            color: #666;
-            font-style: italic;
-            font-size: 0.9rem;
-        }
+        .word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         
-        .pronunciation::before {
-            content: "/ ";
+        .word-card { 
+            background: rgba(255, 255, 255, 0.03); border: 1px solid #1a4a5e;
+            padding: 15px; position: relative; transition: 0.2s; cursor: pointer;
         }
-        .pronunciation::after {
-            content: " /";
+        .word-card:hover { border-color: #00f0ff; background: rgba(0, 240, 255, 0.05); }
+
+        .jp-word { font-size: 1rem; color: #ffffff; font-weight: bold; display: block; }
+        
+        .lata-word { 
+            display: block; font-size: 1.4rem; color: #ff2a7a; margin-top: 5px;
+            text-shadow: 0 0 5px rgba(255, 42, 122, 0.4);
+            min-height: 1.5rem;
         }
 
-        /* 詳細エリア (初期状態は非表示) */
-        .word-details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out, padding 0.3s ease;
-            background-color: #fafafa;
-            padding: 0 20px;
-        }
+        .details { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(26, 74, 94, 0.5); font-size: 0.85rem; display: none; }
+        .details.active { display: block; animation: fadeIn 0.3s ease; }
 
-        .word-card.active .word-details {
-            max-height: 500px; /* 十分な高さを確保 */
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-        }
+        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 8px; letter-spacing: 1px; }
+        
+        /* 例文の日本語訳スタイル */
+        .ex-jp { color: #8ab4f8; font-style: italic; margin-top: 4px; display: block; padding-left: 5px; border-left: 1px solid #1a4a5e; }
 
-        .pos-tag {
-            display: inline-block;
-            background-color: #e2e6ea;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #555;
-            margin-bottom: 8px;
-        }
+        .hidden { display: none; }
+        .no-data { opacity: 0.4; font-style: italic; font-size: 0.8rem; }
 
-        .description-text {
-            line-height: 1.6;
-        }
-
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>ラタタラ語 辞書</h1>
-    <div class="stats">
-        現在の登録単語数: <span id="word-count">0</span> 語
+<div class="container">
+    <h1>LATATALOT DATABASE</h1>
+    <div id="status">> INITIALIZING...</div>
+
+    <div id="filter-container" class="filter-area">
+        <div class="filter-group" id="filter-buttons"></div>
     </div>
-</header>
 
-<div class="controls">
-    <!-- キーワード検索 -->
-    <input type="text" id="search-box" placeholder="検索 (ラタタラ語・日本語)...">
-    
-    <!-- 品詞絞り込み -->
-    <select id="pos-filter">
-        <option value="all">すべての品詞</option>
-        <option value="名詞">名詞</option>
-        <option value="動詞">動詞</option>
-        <option value="形容詞">形容詞</option>
-        <option value="罪度詞">罪度詞</option>
-        <option value="代名詞">代名詞</option>
-        <option value="疑問詞">疑問詞</option>
-        <option value="その他">その他</option>
-        <option value="誰得詞">誰得詞</option>
-    </select>
-</div>
-
-<div id="dictionary-list">
-    <!-- ここにJavaScriptで単語カードが生成されます -->
+    <div id="dictionary-root"></div>
 </div>
 
 <script>
-    /**
-     * ==============================================
-     *  ★ 単語データの追加・編集エリア ★
-     *  ここに新しい単語を追加してください。
-     *  
-     *  word: ラタタラ語の綴り
-     *  pronunciation: 発音（カタカナやIPA）
-     *  meaning: 日本語の意味
-     *  pos: 品詞 (名詞, 動詞, 形容詞, その他 etc.)
-     *  desc: 詳細な説明・例文など
-     * ==============================================
-     */
-    const dictionaryData = [
-        {
-            word: "latatalot",
-            pronunciation: "latatalot",
-            meaning: "ラタタラ語",
-            pos: "名詞",
-            desc: "ラタタラ語でラタタラ語。"
-        },
-        {
-            word: "sis",
-            pronunciation: "sis",
-            meaning: "私",
-            pos: "代名詞",
-            desc: "fe+罪度詞+sisで表す"
-        },
-        {
-            word: "kit",
-            pronunciation: "kit",
-            meaning: "あなた",
-            pos: "代名詞",
-            desc: "fe+罪度詞+kitで表す"
-        },
-        {
-            word: "pal",
-            pronunciation: "pal",
-            meaning: "彼、彼女",
-            pos: "代名詞",
-            desc: "fe+罪度詞+palで表す"
-        },
-        {
-            word: "sisok",
-            pronunciation: "sisok",
-            meaning: "私たち",
-            pos: "代名詞",
-            desc: "fe+罪度詞+sisokで表す"
-        },
-        {
-            word: "kitok",
-            pronunciation: "kitok",
-            meaning: "あなたたち",
-            pos: "代名詞",
-            desc: "fe+罪度詞+kitokで表す"
-        },
-        {
-            word: "palok",
-            pronunciation: "palok",
-            meaning: "彼ら、彼女ら",
-            pos: "代名詞",
-            desc: "fe+罪度詞+palokで表す"
-        },
-        {
-            word: "fe",
-            pronunciation: "fe",
-            meaning: "罪",
-            pos: "名詞",
-            desc: "前世で犯した罪のみを指す"
-        },
-        {
-            word: "te",
-            pronunciation: "te",
-            meaning: "罪がとても重い",
-            pos: "罪度詞",
-            desc: ""
-        },
-        {
-            word: "ko",
-            pronunciation: "ko",
-            meaning: "罪が重い",
-            pos: "罪度詞",
-            desc: ""
-        },
-        {
-            word: "su",
-            pronunciation: "su",
-            meaning: "罪がある",
-            pos: "罪度詞",
-            desc: ""
-        },
-        {
-            word: "na",
-            pronunciation: "na",
-            meaning: "罪がない",
-            pos: "罪度詞",
-            desc: ""
-        },
-        {
-            word: "da",
-            pronunciation: "da",
-            meaning: "はい",
-            pos: "形容詞",
-            desc: "英語のYesのような使われ方をする"
-        },
-        {
-            word: "tsos",
-            pronunciation: "tsos",
-            meaning: "いいえ、ではない",
-            pos: "形容詞",
-            desc: "英語のNoやNotと同じような使われ方"
-        },
-        {
-            word: "alenhodnilonli",
-            pronunciation: "alenhodnilonli",
-            meaning: "金もないし友達もいないし家もないし権力もない人",
-            pos: "誰得詞",
-            desc: ""
+    // ★ここにスプレッドシートのCSV URLを貼り付けてください
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCRQkpXSJl-NfcWTSkOg6lA3cL7XDz25ubHhhQN4iyiD0GRQrzAxmTxHAxWPnmHQTDtORjp-yRX75Z/pub?gid=0&single=true&output=csv';
+
+    let dictionaryData = {};
+    let activeFilters = new Set();
+
+    async function loadDictionary() {
+        const status = document.getElementById('status');
+        try {
+            const response = await fetch(SHEET_CSV_URL);
+            const csvText = await response.text();
+            parseCSV(csvText);
+            status.innerText = '> SYSTEM ONLINE: DATABASE SYNC COMPLETED';
+            renderFilters();
+            renderDictionary();
+        } catch (e) {
+            status.innerText = '> ERROR: CONNECTION FAILED';
+            console.error(e);
         }
+    }
 
-        // ★新しい単語はここに追記してください
-        // { word: "...", pronunciation: "...", meaning: "...", pos: "...", desc: "..." },
-    ];
+    function parseCSV(text) {
+        // 改行で分割
+        const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
+        dictionaryData = {};
 
-    // ==============================================
-    //  以下はシステムロジック（変更不要）
-    // ==============================================
+        for (let i = 1; i < rows.length; i++) {
+            // カンマで分割。引用符で囲まれたカンマなど複雑なケースには簡易対応
+            const cols = rows[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+            if (cols.length < 2) continue;
 
-    const listContainer = document.getElementById('dictionary-list');
-    const wordCountSpan = document.getElementById('word-count');
-    const searchBox = document.getElementById('search-box');
-    const posFilter = document.getElementById('pos-filter');
-
-    // 初期表示
-    renderDictionary(dictionaryData);
-
-    // 単語リストの描画関数
-    function renderDictionary(data) {
-        listContainer.innerHTML = ''; // リセット
-        wordCountSpan.textContent = data.length; // カウント更新
-
-        if (data.length === 0) {
-            listContainer.innerHTML = '<p style="text-align:center;">該当する単語が見つかりません。</p>';
-            return;
-        }
-
-        data.forEach(item => {
-            // カード要素の作成
-            const card = document.createElement('div');
-            card.className = 'word-card';
+            // F列(index 5)まで取得するように拡張
+            const [pos, jp, lata, nuance, example, exampleJp] = cols;
             
-            // クリックイベント（詳細開閉）
-            card.addEventListener('click', () => {
-                card.classList.toggle('active');
+            const category = pos || "未分類";
+            if (!dictionaryData[category]) dictionaryData[category] = [];
+            
+            dictionaryData[category].push({ 
+                jp: jp || "", 
+                lata: lata || "", 
+                nuance: nuance || "", 
+                example: example || "",
+                exampleJp: exampleJp || "" // 新しく追加
+            });
+        }
+    }
+
+    function renderFilters() {
+        const container = document.getElementById('filter-buttons');
+        const poses = Object.keys(dictionaryData);
+        container.innerHTML = `<button class="pos-btn active" id="btn-all" onclick="filterAll()">ALL</button>`;
+        poses.forEach(pos => {
+            container.innerHTML += `<button class="pos-btn" onclick="toggleFilter('${pos}', this)">${pos}</button>`;
+        });
+    }
+
+    function renderDictionary() {
+        const root = document.getElementById('dictionary-root');
+        root.innerHTML = '';
+
+        for (const pos in dictionaryData) {
+            const section = document.createElement('section');
+            section.className = 'pos-section';
+            section.setAttribute('data-pos', pos);
+
+            const title = document.createElement('h2');
+            title.className = 'pos-title';
+            title.innerText = `[ ${pos} ]`;
+            section.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'word-grid';
+
+            dictionaryData[pos].forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.onclick = () => {
+                    const det = card.querySelector('.details');
+                    det.classList.toggle('active');
+                };
+
+                card.innerHTML = `
+                    <span class="jp-word">${item.jp}</span>
+                    <span class="lata-word">${item.lata || '<span class="no-data">undefined</span>'}</span>
+                    <div class="details">
+                        ${item.nuance ? `<strong>[NUANCE]</strong> ${item.nuance}` : ''}
+                        ${item.example ? `<strong>[EXAMPLE]</strong> ${item.example}` : ''}
+                        ${item.exampleJp ? `<span class="ex-jp">${item.exampleJp}</span>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
             });
 
-            // HTMLの中身
-            card.innerHTML = `
-                <div class="word-header">
-                    <span class="latatala-word">${escapeHtml(item.word)}</span>
-                    <span class="japanese-word">${escapeHtml(item.meaning)}</span>
-                    <span class="pronunciation">${escapeHtml(item.pronunciation)}</span>
-                </div>
-                <div class="word-details">
-                    <span class="pos-tag">${escapeHtml(item.pos)}</span>
-                    <p class="description-text">${escapeHtml(item.desc)}</p>
-                </div>
-            `;
+            section.appendChild(grid);
+            root.appendChild(section);
+        }
+    }
 
-            listContainer.appendChild(card);
+    function toggleFilter(pos, btn) {
+        document.getElementById('btn-all').classList.remove('active');
+        btn.classList.toggle('active');
+
+        if (activeFilters.has(pos)) activeFilters.delete(pos);
+        else activeFilters.add(pos);
+
+        if (activeFilters.size === 0) {
+            filterAll();
+            return;
+        }
+        applyFilters();
+    }
+
+    function filterAll() {
+        activeFilters.clear();
+        document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-all').classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        document.querySelectorAll('.pos-section').forEach(sec => {
+            const pos = sec.getAttribute('data-pos');
+            if (activeFilters.size === 0 || activeFilters.has(pos)) {
+                sec.classList.remove('hidden');
+            } else {
+                sec.classList.add('hidden');
+            }
         });
     }
 
-    // フィルタリング処理
-    function filterWords() {
-        const searchText = searchBox.value.toLowerCase();
-        const selectedPos = posFilter.value;
-
-        const filtered = dictionaryData.filter(item => {
-            // 検索キーワード判定 (ラタタラ語 or 日本語 or 発音)
-            const matchesSearch = 
-                item.word.toLowerCase().includes(searchText) ||
-                item.meaning.includes(searchText) ||
-                item.pronunciation.includes(searchText);
-
-            // 品詞判定
-            const matchesPos = (selectedPos === 'all') || (item.pos === selectedPos);
-
-            return matchesSearch && matchesPos;
-        });
-
-        renderDictionary(filtered);
-    }
-
-    // XSS対策用エスケープ関数
-    function escapeHtml(str) {
-        if(!str) return '';
-        return str.replace(/[&<>"']/g, function(m) {
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            }[m];
-        });
-    }
-
-    // イベントリスナー設定
-    searchBox.addEventListener('input', filterWords);
-    posFilter.addEventListener('change', filterWords);
-
+    loadDictionary();
 </script>
 
 </body>
