@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ラタタラ語 辞書 [LIVE DATABASE]</title>
     <style>
+        /* --- フォント設定 --- */
+        @font-face {
+            font-family: 'Latatala_font2';
+            /* フォントファイルのパスを指定してください。例: 'fonts/Latatala_font2.ttf' */
+            src: url('Latatala_font2.woff2') format('woff2'),
+                 url('Latatala_font2.woff') format('woff'),
+                 url('Latatala_font2.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         /* SF・サイバーパンク風スタイル */
         body { 
             font-family: 'Segoe UI', "Meiryo", sans-serif; 
@@ -58,22 +70,36 @@
 
         .jp-word { font-size: 1rem; color: #ffffff; font-weight: bold; display: block; }
         
+        /* ラタタラ語専用スタイル */
+        .lata-text {
+            font-family: 'Latatala_font2', sans-serif;
+        }
+
         .lata-word { 
-            display: block; font-size: 1.4rem; color: #ff2a7a; margin-top: 5px;
+            display: block; font-size: 1.6rem; color: #ff2a7a; margin-top: 5px;
             text-shadow: 0 0 5px rgba(255, 42, 122, 0.4);
             min-height: 1.5rem;
+            font-family: 'Latatala_font2', sans-serif; /* ラタタラ語フォント適用 */
         }
 
         .details { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(26, 74, 94, 0.5); font-size: 0.85rem; display: none; }
         .details.active { display: block; animation: fadeIn 0.3s ease; }
 
-        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 8px; letter-spacing: 1px; }
+        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 8px; letter-spacing: 1px; font-family: sans-serif; }
         
+        /* 例文のラタタラ語部分 */
+        .ex-lata {
+            display: block;
+            font-size: 1.1rem;
+            color: #c5d3e8;
+            margin-top: 2px;
+        }
+
         /* 例文の日本語訳スタイル */
-        .ex-jp { color: #8ab4f8; font-style: italic; margin-top: 4px; display: block; padding-left: 5px; border-left: 1px solid #1a4a5e; }
+        .ex-jp { color: #8ab4f8; font-style: italic; margin-top: 4px; display: block; padding-left: 5px; border-left: 1px solid #1a4a5e; font-family: "Meiryo", sans-serif; }
 
         .hidden { display: none; }
-        .no-data { opacity: 0.4; font-style: italic; font-size: 0.8rem; }
+        .no-data { opacity: 0.4; font-style: italic; font-size: 0.8rem; font-family: sans-serif; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -92,7 +118,6 @@
 </div>
 
 <script>
-    // ★ここにスプレッドシートのCSV URLを貼り付けてください
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCRQkpXSJl-NfcWTSkOg6lA3cL7XDz25ubHhhQN4iyiD0GRQrzAxmTxHAxWPnmHQTDtORjp-yRX75Z/pub?gid=0&single=true&output=csv';
 
     let dictionaryData = {};
@@ -114,16 +139,13 @@
     }
 
     function parseCSV(text) {
-        // 改行で分割
         const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
         dictionaryData = {};
 
         for (let i = 1; i < rows.length; i++) {
-            // カンマで分割。引用符で囲まれたカンマなど複雑なケースには簡易対応
             const cols = rows[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
             if (cols.length < 2) continue;
 
-            // F列(index 5)まで取得するように拡張
             const [pos, jp, lata, nuance, example, exampleJp] = cols;
             
             const category = pos || "未分類";
@@ -134,7 +156,7 @@
                 lata: lata || "", 
                 nuance: nuance || "", 
                 example: example || "",
-                exampleJp: exampleJp || "" // 新しく追加
+                exampleJp: exampleJp || "" 
             });
         }
     }
@@ -173,12 +195,13 @@
                     det.classList.toggle('active');
                 };
 
+                // ラタタラ語フォントを適用する箇所に .lata-text や .ex-lata クラスを付与
                 card.innerHTML = `
                     <span class="jp-word">${item.jp}</span>
                     <span class="lata-word">${item.lata || '<span class="no-data">undefined</span>'}</span>
                     <div class="details">
                         ${item.nuance ? `<strong>[NUANCE]</strong> ${item.nuance}` : ''}
-                        ${item.example ? `<strong>[EXAMPLE]</strong> ${item.example}` : ''}
+                        ${item.example ? `<strong>[EXAMPLE]</strong> <span class="lata-text ex-lata">${item.example}</span>` : ''}
                         ${item.exampleJp ? `<span class="ex-jp">${item.exampleJp}</span>` : ''}
                     </div>
                 `;
