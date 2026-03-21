@@ -98,6 +98,7 @@
 
         .card-lata { display: block; font-size: 1.4rem; color: #ff2a7a; margin-bottom: 4px; }
         .card-jp { font-size: 0.85rem; color: #ffffff; opacity: 0.8; }
+        .card-pos-hint { font-size: 0.65rem; color: #00f0ff; margin-left: 5px; opacity: 0.7; vertical-align: middle;}
 
         /* 詳細パネル内の要素 */
         .detail-header { border-bottom: 1px solid #ff2a7a; margin-bottom: 20px; padding-bottom: 10px; }
@@ -142,10 +143,7 @@
 </header>
 
 <div class="main-content">
-    <!-- 左側：リスト -->
     <div id="dictionary-list" class="list-section"></div>
-
-    <!-- 右側：詳細 -->
     <div id="detail-pane" class="detail-section">
         <div class="empty-notice">> SELECT A WORD TO VIEW DATA</div>
     </div>
@@ -156,7 +154,7 @@
 
     let dictionaryArray = []; 
     let allPosList = new Set();
-    let activeFilters = new Set();
+    let currentFilter = null; // 単一選択のため、Setではなく文字列で管理
 
     async function loadDictionary() {
         const status = document.getElementById('status');
@@ -188,7 +186,6 @@
 
             if (!tempMap.has(wordKey)) {
                 tempMap.set(wordKey, {
-                    id: i,
                     lata: lata,
                     meanings: [],
                     allPos: new Set()
@@ -215,37 +212,46 @@
         const container = document.getElementById('filter-buttons');
         container.innerHTML = `<button class="pos-btn active" id="btn-all" onclick="filterAll()">ALL</button>`;
         Array.from(allPosList).sort().forEach(pos => {
-            container.innerHTML += `<button class="pos-btn" onclick="toggleFilter('${pos}', this)">${pos}</button>`;
+            container.innerHTML += `<button class="pos-btn" onclick="setFilter('${pos}', this)">${pos}</button>`;
         });
     }
 
+    // 辞書リストの描画（フィルター状態を反映）
     function renderDictionary() {
         const listRoot = document.getElementById('dictionary-list');
         listRoot.innerHTML = '';
 
         dictionaryArray.forEach((wordData, index) => {
+            // フィルターがかかっている場合、その品詞を持っていない単語は表示しない
+            if (currentFilter && !wordData.allPos.has(currentFilter)) {
+                return;
+            }
+
             const card = document.createElement('div');
             card.className = 'word-card';
-            card.setAttribute('data-pos-list', Array.from(wordData.allPos).join(','));
-            card.onclick = () => showDetail(index, card);
+            card.onclick = () => showDetail(wordData, card);
             
-            // リスト表示用：最初の意味だけ表示
-            const primaryMeaning = wordData.meanings[0]?.jp || '---';
+            // 表示する意味の決定：
+            // フィルターがある場合はその品詞の意味を、ない場合は最初の意味を表示
+            let targetMeaning = wordData.meanings[0];
+            if (currentFilter) {
+                const match = wordData.meanings.find(m => m.pos === currentFilter);
+                if (match) targetMeaning = match;
+            }
 
             card.innerHTML = `
                 <span class="card-lata lata-font">${wordData.lata || '---'}</span>
-                <span class="card-jp">${primaryMeaning}</span>
+                <span class="card-jp">${targetMeaning.jp}</span>
+                ${targetMeaning.pos ? `<span class="card-pos-hint">(${targetMeaning.pos})</span>` : ''}
             `;
             listRoot.appendChild(card);
         });
     }
 
-    function showDetail(index, cardElement) {
-        // ハイライトの切り替え
+    function showDetail(wordData, cardElement) {
         document.querySelectorAll('.word-card').forEach(c => c.classList.remove('selected'));
         cardElement.classList.add('selected');
 
-        const wordData = dictionaryArray[index];
         const detailPane = document.getElementById('detail-pane');
         
         let meaningsHtml = '';
@@ -256,12 +262,7 @@
                 idiomPairs.forEach(pair => {
                     const [iLata, iJp] = pair.split(':');
                     if (iLata) {
-                        idiomsHtml += `
-                            <div class="idiom-entry">
-                                <span class="idiom-lata lata-font">${iLata.trim()}</span>
-                                ${iJp ? `<span class="idiom-jp">${iJp.trim()}</span>` : ''}
-                            </div>
-                        `;
+                        idiomsHtml += `<div class="idiom-entry"><span class="idiom-lata lata-font">${iLata.trim()}</span>${iJp ? `<span class="idiom-jp">${iJp.trim()}</span>` : ''}</div>`;
                     }
                 });
             }
@@ -272,20 +273,16 @@
                         ${m.pos ? `<span class="detail-pos">${m.pos}</span>` : ''}
                         <span class="detail-jp">${m.jp}</span>
                     </div>
-
                     <span class="section-title">[Nuance]</span>
                     <div>${m.nuance || '<span class="no-data">No description available</span>'}</div>
-                    
                     <span class="section-title">[Example]</span>
                     ${m.example ? `<span class="lata-font ex-lata">${m.example}</span>` : '<span class="no-data">No example</span>'}
                     ${m.exampleJp ? `<span class="ex-jp">${m.exampleJp}</span>` : ''}
-                    
                     <div class="rel-grid">
                         <div><span class="rel-label">SYN:</span><span class="lata-font">${m.syn || '<small class="no-data">None</small>'}</span></div>
                         <div><span class="rel-label">ANT:</span><span class="lata-font">${m.ant || '<small class="no-data">None</small>'}</span></div>
                         <div><span class="rel-label">REL:</span><span class="lata-font">${m.rel || '<small class="no-data">None</small>'}</span></div>
                     </div>
-
                     <span class="section-title">[Idioms]</span>
                     <div>${idiomsHtml || '<span class="no-data">No idioms registered</span>'}</div>
                 </div>
@@ -293,47 +290,35 @@
         });
 
         detailPane.innerHTML = `
-            <div class="detail-header">
-                <span class="detail-lata lata-font">${wordData.lata}</span>
-            </div>
+            <div class="detail-header"><span class="detail-lata lata-font">${wordData.lata}</span></div>
             ${meaningsHtml}
         `;
-        detailPane.scrollTop = 0; // スクロールを上に戻す
+        detailPane.scrollTop = 0;
     }
 
-    function toggleFilter(pos, btn) {
-        document.getElementById('btn-all').classList.remove('active');
-        btn.classList.toggle('active');
-
-        if (activeFilters.has(pos)) activeFilters.delete(pos);
-        else activeFilters.add(pos);
-
-        if (activeFilters.size === 0) {
+    // 単一フィルターの設定
+    function setFilter(pos, btn) {
+        // すでに選択されているものをもう一度押した場合はALLに戻す
+        if (currentFilter === pos) {
             filterAll();
             return;
         }
-        applyFilters();
+
+        currentFilter = pos;
+        
+        // 全ボタンのスタイル更新
+        document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('btn-all').classList.remove('active');
+
+        renderDictionary();
     }
 
     function filterAll() {
-        activeFilters.clear();
+        currentFilter = null;
         document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-all').classList.add('active');
-        applyFilters();
-    }
-
-    function applyFilters() {
-        const cards = document.querySelectorAll('.word-card');
-        cards.forEach(card => {
-            if (activeFilters.size === 0) {
-                card.classList.remove('hidden');
-                return;
-            }
-            const cardPosList = card.getAttribute('data-pos-list').split(',');
-            const hasMatch = Array.from(activeFilters).some(filter => cardPosList.includes(filter));
-            if (hasMatch) card.classList.remove('hidden');
-            else card.classList.add('hidden');
-        });
+        renderDictionary();
     }
 
     loadDictionary();
