@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラタタラ辞書</title>
+    <title>ラタタラ辞書 - DATABASE</title>
     <style>
         /* --- フォント設定 --- */
         @font-face {
             font-family: 'Latatala_font2-Regular';
-            src: url('Latatala_font2-Regular.ttf') format('ttf'),
-                 url('Latatala_font2-Regular.ttf') format('truetype');
+            src: url('Latatala_font2-Regular.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
         }
 
-        /* ラタタラ語専用フォントクラス */
         .lata-font {
             font-family: 'Latatala_font2-Regular', sans-serif !important;
         }
@@ -29,99 +27,128 @@
                 linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
             background-size: 30px 30px;
-            padding-bottom: 50px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        header { padding: 20px 20px 0 20px; flex-shrink: 0; }
 
         h1 { 
-            text-align: center; color: #00f0ff; font-size: 1.5rem;
+            text-align: center; color: #00f0ff; font-size: 1.2rem;
             text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-            letter-spacing: 4px; margin: 40px 0;
+            letter-spacing: 4px; margin: 10px 0;
             text-transform: uppercase;
         }
 
-        #status { text-align: center; font-family: monospace; font-size: 0.8rem; color: #00f0ff; margin-bottom: 20px; }
+        #status { text-align: center; font-family: monospace; font-size: 0.7rem; color: #00f0ff; margin-bottom: 10px; }
 
         /* フィルター */
         .filter-area {
-            background: rgba(10, 15, 25, 0.9); border: 1px solid #1a4a5e;
-            padding: 15px; border-radius: 4px; margin-bottom: 30px;
-            position: sticky; top: 10px; z-index: 100;
+            background: rgba(10, 15, 25, 0.8); border: 1px solid #1a4a5e;
+            padding: 10px; border-radius: 4px; margin-bottom: 10px;
         }
-        .filter-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .filter-group { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .pos-btn {
             background: transparent; border: 1px solid #1a4a5e; color: #8ab4f8;
-            padding: 5px 12px; cursor: pointer; font-size: 0.85rem; border-radius: 2px;
+            padding: 4px 10px; cursor: pointer; font-size: 0.75rem; border-radius: 2px;
             transition: 0.2s;
         }
         .pos-btn.active { border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.1); }
 
-        /* 辞書表示 */
-        .word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        
+        /* メインレイアウト */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            border-top: 1px solid #1a4a5e;
+        }
+
+        /* 左側：リスト (3/4) */
+        .list-section {
+            flex: 3;
+            overflow-y: auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 15px;
+            align-content: flex-start;
+        }
+
+        /* 右側：詳細 (1/4) */
+        .detail-section {
+            flex: 1;
+            background: rgba(5, 5, 15, 0.9);
+            border-left: 1px solid #00f0ff;
+            padding: 25px;
+            overflow-y: auto;
+            box-shadow: -10px 0 20px rgba(0, 0, 0, 0.5);
+            min-width: 300px;
+        }
+
+        /* 単語カード（簡易版） */
         .word-card { 
             background: rgba(255, 255, 255, 0.03); border: 1px solid #1a4a5e;
-            padding: 15px; position: relative; transition: 0.2s;
+            padding: 12px; cursor: pointer; transition: 0.2s;
+            position: relative;
         }
         .word-card:hover { border-color: #00f0ff; background: rgba(0, 240, 255, 0.08); }
+        .word-card.selected { border-color: #ff2a7a; background: rgba(255, 42, 122, 0.1); }
 
-        .lata-word { 
-            display: block; font-size: 1.8rem; color: #ff2a7a; margin-bottom: 12px;
-            text-shadow: 0 0 5px rgba(255, 42, 122, 0.4);
-        }
+        .card-lata { display: block; font-size: 1.4rem; color: #ff2a7a; margin-bottom: 4px; }
+        .card-jp { font-size: 0.85rem; color: #ffffff; opacity: 0.8; }
 
-        .meaning-item {
-            border-top: 1px solid rgba(0, 240, 255, 0.1);
-            padding-top: 10px;
-            margin-bottom: 15px;
-        }
-        .meaning-item:first-of-type { border-top: none; padding-top: 0; }
-
-        .pos-tag {
-            font-size: 0.7rem; color: #00f0ff; border: 1px solid #00f0ff;
-            padding: 1px 4px; border-radius: 3px; margin-right: 6px; 
-            vertical-align: middle;
-        }
-
-        .jp-word { font-size: 1rem; color: #ffffff; font-weight: bold; vertical-align: middle; }
+        /* 詳細パネル内の要素 */
+        .detail-header { border-bottom: 1px solid #ff2a7a; margin-bottom: 20px; padding-bottom: 10px; }
+        .detail-lata { font-size: 2.5rem; color: #ff2a7a; text-shadow: 0 0 10px rgba(255, 42, 122, 0.5); display: block; }
         
-        .details { margin-top: 8px; font-size: 0.85rem; display: block; }
+        .detail-item { margin-bottom: 25px; background: rgba(0, 240, 255, 0.03); padding: 15px; border-radius: 4px; }
+        .detail-pos { font-size: 0.7rem; color: #00f0ff; border: 1px solid #00f0ff; padding: 1px 4px; margin-right: 8px; }
+        .detail-jp { font-size: 1.2rem; font-weight: bold; color: #fff; }
 
-        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 10px; letter-spacing: 1px; }
+        .section-title { color: #00f0ff; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin: 15px 0 5px 0; display: block; font-weight: bold;}
         
-        .ex-lata { display: block; font-size: 1.1rem; color: #c5d3e8; margin-top: 2px; }
-        .ex-jp { color: #8ab4f8; font-style: italic; margin-top: 4px; display: block; padding-left: 5px; border-left: 1px solid #1a4a5e; font-family: "Meiryo", sans-serif; }
+        .ex-lata { display: block; font-size: 1.1rem; color: #c5d3e8; margin-top: 5px; }
+        .ex-jp { color: #8ab4f8; font-style: italic; font-size: 0.9rem; border-left: 2px solid #1a4a5e; padding-left: 10px; margin-top: 5px; display: block; }
 
-        .rel-info { font-size: 0.8rem; margin-top: 8px; color: #a0aec0; }
-        .rel-info span { color: #00f0ff; font-weight: bold; margin-right: 4px; font-size: 0.7rem; }
-        .rel-val { margin-left: 4px; }
-        
-        .idiom-box { margin-top: 5px; }
-        .idiom-entry { 
-            background: rgba(255, 255, 255, 0.05); border-radius: 3px; 
-            padding: 4px 8px; margin-bottom: 4px; 
-        }
+        .rel-grid { display: grid; grid-template-columns: 1fr; gap: 5px; font-size: 0.85rem; margin-top: 10px;}
+        .rel-label { color: #00f0ff; font-weight: bold; margin-right: 10px; }
+
+        .idiom-entry { background: rgba(255, 255, 255, 0.05); padding: 8px; margin-top: 5px; border-radius: 2px; }
         .idiom-lata { color: #ff2a7a; font-size: 1.1rem; }
-        .idiom-jp { font-size: 0.8rem; color: #ffffff; margin-left: 10px; }
+        .idiom-jp { font-size: 0.8rem; margin-left: 10px; }
 
+        .empty-notice { text-align: center; margin-top: 100px; color: #1a4a5e; font-family: monospace; }
         .hidden { display: none !important; }
-        .no-data { opacity: 0.3; font-style: italic; font-size: 0.8rem; color: #c5d3e8; }
+        .no-data { opacity: 0.4; font-size: 0.8rem; font-style: italic; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #1a4a5e; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<header>
     <h1>LATATALOT DATABASE</h1>
     <div id="status">> INITIALIZING...</div>
 
     <div id="filter-container" class="filter-area">
         <div class="filter-group" id="filter-buttons"></div>
     </div>
+</header>
 
-    <div id="dictionary-root" class="word-grid"></div>
+<div class="main-content">
+    <!-- 左側：リスト -->
+    <div id="dictionary-list" class="list-section"></div>
+
+    <!-- 右側：詳細 -->
+    <div id="detail-pane" class="detail-section">
+        <div class="empty-notice">> SELECT A WORD TO VIEW DATA</div>
+    </div>
 </div>
 
 <script>
@@ -157,11 +184,11 @@
             const [pos, jp, lata, nuance, example, exampleJp, syn, ant, rel, idioms] = cols;
             if (!lata && !jp) continue;
 
-            // 内部的なキーとしてのfallback
-            const wordKey = lata || `(sisok tsoskopel olindeal)-${i}`;
+            const wordKey = lata || `(sisok)-${i}`;
 
             if (!tempMap.has(wordKey)) {
                 tempMap.set(wordKey, {
+                    id: i,
                     lata: lata,
                     meanings: [],
                     allPos: new Set()
@@ -193,67 +220,85 @@
     }
 
     function renderDictionary() {
-        const root = document.getElementById('dictionary-root');
-        root.innerHTML = '';
+        const listRoot = document.getElementById('dictionary-list');
+        listRoot.innerHTML = '';
 
-        dictionaryArray.forEach(wordData => {
+        dictionaryArray.forEach((wordData, index) => {
             const card = document.createElement('div');
             card.className = 'word-card';
             card.setAttribute('data-pos-list', Array.from(wordData.allPos).join(','));
+            card.onclick = () => showDetail(index, card);
             
-            let meaningsHtml = '';
-            wordData.meanings.forEach(m => {
-                let idiomsHtml = '';
-                if (m.idioms) {
-                    const idiomPairs = m.idioms.split('/');
-                    idiomPairs.forEach(pair => {
-                        const [iLata, iJp] = pair.split(':');
-                        if (iLata) {
-                            idiomsHtml += `
-                                <div class="idiom-entry">
-                                    <span class="idiom-lata lata-font">${iLata.trim()}</span>
-                                    ${iJp ? `<span class="idiom-jp">${iJp.trim()}</span>` : ''}
-                                </div>
-                            `;
-                        }
-                    });
-                } else {
-                    idiomsHtml = '<div class="no-data">熟語データなし</div>';
-                }
-
-                meaningsHtml += `
-                    <div class="meaning-item">
-                        <div>
-                            ${m.pos ? `<span class="pos-tag">${m.pos}</span>` : ''}
-                            <span class="jp-word">${m.jp}</span>
-                        </div>
-                        <div class="details">
-                            <strong>[NUANCE]</strong>
-                            <div>${m.nuance || '<span class="no-data">説明なし</span>'}</div>
-                            
-                            <strong>[EXAMPLE]</strong>
-                            ${m.example ? `<span class="lata-font ex-lata">${m.example}</span>` : '<span class="no-data">例文なし</span>'}
-                            ${m.exampleJp ? `<span class="ex-jp">${m.exampleJp}</span>` : ''}
-                            
-                            <div class="rel-info">
-                                <div><span>SYN:</span><span class="rel-val lata-font">${m.syn || '<small class="no-data">なし</small>'}</span></div>
-                                <div><span>ANT:</span><span class="rel-val lata-font">${m.ant || '<small class="no-data">なし</small>'}</span></div>
-                                <div><span>REL:</span><span class="rel-val lata-font">${m.rel || '<small class="no-data">なし</small>'}</span></div>
-                            </div>
-
-                            <strong>[IDIOMS]</strong>
-                            <div class="idiom-box">${idiomsHtml}</div>
-                        </div>
-                    </div>
-                `;
-            });
+            // リスト表示用：最初の意味だけ表示
+            const primaryMeaning = wordData.meanings[0]?.jp || '---';
 
             card.innerHTML = `
-                <span class="lata-word lata-font">${wordData.lata || '<span class="no-data">sisok tsoskopel olindeal</span>'}</span>
-                ${meaningsHtml}
+                <span class="card-lata lata-font">${wordData.lata || '---'}</span>
+                <span class="card-jp">${primaryMeaning}</span>
             `;
-            root.appendChild(card);
+            listRoot.appendChild(card);
         });
+    }
+
+    function showDetail(index, cardElement) {
+        // ハイライトの切り替え
+        document.querySelectorAll('.word-card').forEach(c => c.classList.remove('selected'));
+        cardElement.classList.add('selected');
+
+        const wordData = dictionaryArray[index];
+        const detailPane = document.getElementById('detail-pane');
+        
+        let meaningsHtml = '';
+        wordData.meanings.forEach(m => {
+            let idiomsHtml = '';
+            if (m.idioms) {
+                const idiomPairs = m.idioms.split('/');
+                idiomPairs.forEach(pair => {
+                    const [iLata, iJp] = pair.split(':');
+                    if (iLata) {
+                        idiomsHtml += `
+                            <div class="idiom-entry">
+                                <span class="idiom-lata lata-font">${iLata.trim()}</span>
+                                ${iJp ? `<span class="idiom-jp">${iJp.trim()}</span>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            meaningsHtml += `
+                <div class="detail-item">
+                    <div>
+                        ${m.pos ? `<span class="detail-pos">${m.pos}</span>` : ''}
+                        <span class="detail-jp">${m.jp}</span>
+                    </div>
+
+                    <span class="section-title">[Nuance]</span>
+                    <div>${m.nuance || '<span class="no-data">No description available</span>'}</div>
+                    
+                    <span class="section-title">[Example]</span>
+                    ${m.example ? `<span class="lata-font ex-lata">${m.example}</span>` : '<span class="no-data">No example</span>'}
+                    ${m.exampleJp ? `<span class="ex-jp">${m.exampleJp}</span>` : ''}
+                    
+                    <div class="rel-grid">
+                        <div><span class="rel-label">SYN:</span><span class="lata-font">${m.syn || '<small class="no-data">None</small>'}</span></div>
+                        <div><span class="rel-label">ANT:</span><span class="lata-font">${m.ant || '<small class="no-data">None</small>'}</span></div>
+                        <div><span class="rel-label">REL:</span><span class="lata-font">${m.rel || '<small class="no-data">None</small>'}</span></div>
+                    </div>
+
+                    <span class="section-title">[Idioms]</span>
+                    <div>${idiomsHtml || '<span class="no-data">No idioms registered</span>'}</div>
+                </div>
+            `;
+        });
+
+        detailPane.innerHTML = `
+            <div class="detail-header">
+                <span class="detail-lata lata-font">${wordData.lata}</span>
+            </div>
+            ${meaningsHtml}
+        `;
+        detailPane.scrollTop = 0; // スクロールを上に戻す
     }
 
     function toggleFilter(pos, btn) {
