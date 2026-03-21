@@ -63,7 +63,6 @@
         .word-card { 
             background: rgba(255, 255, 255, 0.03); border: 1px solid #1a4a5e;
             padding: 15px; position: relative; transition: 0.2s;
-            /* 常時表示のため cursor: pointer は削除 */
         }
         .word-card:hover { border-color: #00f0ff; background: rgba(0, 240, 255, 0.08); }
 
@@ -87,7 +86,6 @@
 
         .jp-word { font-size: 1rem; color: #ffffff; font-weight: bold; vertical-align: middle; }
         
-        /* 詳細エリアを常時表示 */
         .details { margin-top: 8px; font-size: 0.85rem; display: block; }
 
         .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 10px; letter-spacing: 1px; }
@@ -159,7 +157,8 @@
             const [pos, jp, lata, nuance, example, exampleJp, syn, ant, rel, idioms] = cols;
             if (!lata && !jp) continue;
 
-            const wordKey = lata || `(undefined)-${i}`;
+            // 内部的なキーとしてのfallback
+            const wordKey = lata || `(sisok tsoskopel olindeal)-${i}`;
 
             if (!tempMap.has(wordKey)) {
                 tempMap.set(wordKey, {
@@ -202,11 +201,8 @@
             card.className = 'word-card';
             card.setAttribute('data-pos-list', Array.from(wordData.allPos).join(','));
             
-            // onclick による開閉ロジックは削除しました
-
             let meaningsHtml = '';
             wordData.meanings.forEach(m => {
-                // 熟語の解析
                 let idiomsHtml = '';
                 if (m.idioms) {
                     const idiomPairs = m.idioms.split('/');
@@ -253,7 +249,7 @@
             });
 
             card.innerHTML = `
-                <span class="lata-word lata-font">${wordData.lata || '<span class="no-data">undefined</span>'}</span>
+                <span class="lata-word lata-font">${wordData.lata || '<span class="no-data">sisok tsoskopel olindeal</span>'}</span>
                 ${meaningsHtml}
             `;
             root.appendChild(card);
