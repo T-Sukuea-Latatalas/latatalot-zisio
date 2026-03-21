@@ -15,6 +15,11 @@
             font-display: swap;
         }
 
+        /* ラタタラ語専用フォントクラス */
+        .lata-font {
+            font-family: 'Latatala_font2-Regular', sans-serif !important;
+        }
+
         /* SF・サイバーパンク風スタイル */
         body { 
             font-family: 'Segoe UI', "Meiryo", sans-serif; 
@@ -61,14 +66,11 @@
         }
         .word-card:hover { border-color: #00f0ff; background: rgba(0, 240, 255, 0.08); }
 
-        /* ラタタラ語専用スタイル */
         .lata-word { 
             display: block; font-size: 1.8rem; color: #ff2a7a; margin-bottom: 12px;
             text-shadow: 0 0 5px rgba(255, 42, 122, 0.4);
-            font-family: 'Latatala_font2-Regular', sans-serif;
         }
 
-        /* 意味ごとのブロック */
         .meaning-item {
             border-top: 1px solid rgba(0, 240, 255, 0.1);
             padding-top: 10px;
@@ -79,7 +81,7 @@
         .pos-tag {
             font-size: 0.7rem; color: #00f0ff; border: 1px solid #00f0ff;
             padding: 1px 4px; border-radius: 3px; margin-right: 6px; 
-            font-family: sans-serif; vertical-align: middle;
+            vertical-align: middle;
         }
 
         .jp-word { font-size: 1rem; color: #ffffff; font-weight: bold; vertical-align: middle; }
@@ -87,26 +89,25 @@
         .details { margin-top: 8px; font-size: 0.85rem; display: none; }
         .details.active { display: block; animation: fadeIn 0.3s ease; }
 
-        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 10px; letter-spacing: 1px; font-family: sans-serif; }
+        .details strong { color: #00f0ff; display: block; font-size: 0.7rem; margin-top: 10px; letter-spacing: 1px; }
         
-        .lata-text { font-family: 'Latatala_font2-Regular', sans-serif; }
         .ex-lata { display: block; font-size: 1.1rem; color: #c5d3e8; margin-top: 2px; }
         .ex-jp { color: #8ab4f8; font-style: italic; margin-top: 4px; display: block; padding-left: 5px; border-left: 1px solid #1a4a5e; font-family: "Meiryo", sans-serif; }
 
-        /* 追加項目のデザイン */
         .rel-info { font-size: 0.8rem; margin-top: 8px; color: #a0aec0; }
         .rel-info span { color: #00f0ff; font-weight: bold; margin-right: 4px; font-size: 0.7rem; }
+        .rel-val { margin-left: 4px; }
         
         .idiom-box { margin-top: 5px; }
         .idiom-entry { 
             background: rgba(255, 255, 255, 0.05); border-radius: 3px; 
             padding: 4px 8px; margin-bottom: 4px; 
         }
-        .idiom-lata { font-family: 'Latatala_font2-Regular', sans-serif; color: #ff2a7a; font-size: 1rem; }
+        .idiom-lata { color: #ff2a7a; font-size: 1.1rem; }
         .idiom-jp { font-size: 0.8rem; color: #ffffff; margin-left: 10px; }
 
         .hidden { display: none !important; }
-        .no-data { opacity: 0.4; font-style: italic; font-size: 0.8rem; font-family: sans-serif; }
+        .no-data { opacity: 0.3; font-style: italic; font-size: 0.8rem; color: #c5d3e8; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -154,7 +155,6 @@
             const cols = rows[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
             if (cols.length < 2) continue;
 
-            // G列以降（syn, ant, rel, idioms）を取得
             const [pos, jp, lata, nuance, example, exampleJp, syn, ant, rel, idioms] = cols;
             if (!lata && !jp) continue;
 
@@ -208,7 +208,7 @@
 
             let meaningsHtml = '';
             wordData.meanings.forEach(m => {
-                // 熟語の解析ロジック
+                // 熟語の解析
                 let idiomsHtml = '';
                 if (m.idioms) {
                     const idiomPairs = m.idioms.split('/');
@@ -217,12 +217,14 @@
                         if (iLata) {
                             idiomsHtml += `
                                 <div class="idiom-entry">
-                                    <span class="idiom-lata">${iLata.trim()}</span>
+                                    <span class="idiom-lata lata-font">${iLata.trim()}</span>
                                     ${iJp ? `<span class="idiom-jp">${iJp.trim()}</span>` : ''}
                                 </div>
                             `;
                         }
                     });
+                } else {
+                    idiomsHtml = '<div class="no-data">熟語データなし</div>';
                 }
 
                 meaningsHtml += `
@@ -232,28 +234,28 @@
                             <span class="jp-word">${m.jp}</span>
                         </div>
                         <div class="details">
-                            ${m.nuance ? `<strong>[NUANCE]</strong> ${m.nuance}` : ''}
+                            <strong>[NUANCE]</strong>
+                            <div>${m.nuance || '<span class="no-data">説明なし</span>'}</div>
                             
-                            <!-- 1. 単語自身の用例を最優先で表示 -->
-                            ${m.example ? `<strong>[EXAMPLE]</strong> <span class="lata-text ex-lata">${m.example}</span>` : ''}
+                            <strong>[EXAMPLE]</strong>
+                            ${m.example ? `<span class="lata-font ex-lata">${m.example}</span>` : '<span class="no-data">例文なし</span>'}
                             ${m.exampleJp ? `<span class="ex-jp">${m.exampleJp}</span>` : ''}
                             
-                            <!-- 2. 類義語・対義語・関連語（行ごとに独立して表示） -->
                             <div class="rel-info">
-                                ${m.syn ? `<div><span>SYN:</span> ${m.syn}</div>` : ''}
-                                ${m.ant ? `<div><span>ANT:</span> ${m.ant}</div>` : ''}
-                                ${m.rel ? `<div><span>REL:</span> ${m.rel}</div>` : ''}
+                                <div><span>SYN:</span><span class="rel-val lata-font">${m.syn || '<small class="no-data">なし</small>'}</span></div>
+                                <div><span>ANT:</span><span class="rel-val lata-font">${m.ant || '<small class="no-data">なし</small>'}</span></div>
+                                <div><span>REL:</span><span class="rel-val lata-font">${m.rel || '<small class="no-data">なし</small>'}</span></div>
                             </div>
 
-                            <!-- 3. 熟語セクション -->
-                            ${idiomsHtml ? `<strong>[IDIOMS]</strong><div class="idiom-box">${idiomsHtml}</div>` : ''}
+                            <strong>[IDIOMS]</strong>
+                            <div class="idiom-box">${idiomsHtml}</div>
                         </div>
                     </div>
                 `;
             });
 
             card.innerHTML = `
-                <span class="lata-word">${wordData.lata || '<span class="no-data">undefined</span>'}</span>
+                <span class="lata-word lata-font">${wordData.lata || '<span class="no-data">undefined</span>'}</span>
                 ${meaningsHtml}
             `;
             root.appendChild(card);
